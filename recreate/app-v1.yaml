@@ -21,9 +21,6 @@ metadata:
     app: my-app
 spec:
   replicas: 3
-  selector:
-    matchLabels:
-      app: my-app
   strategy:
     type: Recreate
   selector:

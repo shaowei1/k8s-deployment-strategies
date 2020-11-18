@@ -27,6 +27,15 @@ $ helm install \
     --version=1.60.0 \
     --set rbac.enabled=true \
     stable/traefik
+helm repo add traefik https://helm.traefik.io/traefik
+helm repo update
+helm install traefik traefik/traefik
+kubectl port-forward $(kubectl get pods --selector "app.kubernetes.io/name=traefik" --output=name) 9000:9000
+
+http://127.0.0.1:9000/dashboard/
+
+
+
 
 # Deploy version 1 of application a and b and the ingress
 $ kubectl apply -f app-a-v1.yaml -f app-b-v1.yaml -f ingress-v1.yaml

@@ -1,0 +1,63 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: http-gateway
+spec:
+  selector: #  使用默认的控制器, k get po -n istio-system --show-labels
+    istio: ingressgateway
+  servers:
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+    - "*"
+---
+# 定义目标规则, 用于子集选择
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: my-app
+spec:
+  host: my-app
+  subsets:
+    - name: old
+      labels:
+        version: v1.0.0
+    - name: new
+      labels:
+        version: v2.0.0
+
+
+---
+# A/B Test, 选择目标service, 网关
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: my-app
+spec:
+  hosts:
+    - "*"
+  gateways:
+    - http-gateway
+  http:
+    - match:
+      - headers:
+          origin:
+            exact: http://test-istio.com
+      route:
+        - destination:
+            host: my-app
+            subset: new
+    - route:
+        - destination:
+            host: my-app
+            subset: old
+
+# kubectl get service istio-ingressgateway --namespace=istio-system
+# curl 123.57.215.166(EXTERNAL-IP)
+# curl 123.57.215.166  -H 'origin: http://test-istio.com'
+# while sleep 0.1; do curl "123.57.215.166" -H 'origin: http://test-istio.com'; done
+# kubectl scale --replicas=9 deployment my-app-v2
+# service=$(kubectl get service istio-ingressgateway --namespace=istio-system --output='jsonpath={.spec.clusterIP}')
+# curl $service
